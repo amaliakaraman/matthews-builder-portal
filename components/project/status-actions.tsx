@@ -58,9 +58,9 @@ export function StatusActions({ project }: Props) {
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
-  const allowed =
-    (project.tier && NEXT_STATUSES_BY_TIER[project.tier]) ??
-    NEXT_STATUSES_BY_TIER.contributor;
+  const allowed: string[] = project.tier
+    ? (NEXT_STATUSES_BY_TIER[project.tier] ?? NEXT_STATUSES_BY_TIER.contributor)
+    : NEXT_STATUSES_BY_TIER.contributor;
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();

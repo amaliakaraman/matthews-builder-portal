@@ -36,7 +36,9 @@ const ROLES_BY_TIER: Record<string, string[]> = {
 };
 
 export function Assignments({ project, assignments, assignableUsers, isAdmin }: Props) {
-  const allowed = (project.tier && ROLES_BY_TIER[project.tier]) ?? [];
+  const allowed: string[] = project.tier
+    ? (ROLES_BY_TIER[project.tier] ?? [])
+    : [];
   const [role, setRole] = useState<string>(allowed[0] ?? "px_coach");
   const [userId, setUserId] = useState<string | null>(null);
   const [pending, start] = useTransition();

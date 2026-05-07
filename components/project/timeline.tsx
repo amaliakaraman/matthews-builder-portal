@@ -40,7 +40,7 @@ const FLOW_BY_TIER: Record<string, string[]> = {
 };
 
 export function Timeline({ milestones, tier }: TimelineProps) {
-  const flow = (tier && FLOW_BY_TIER[tier]) ?? FULL_FLOW;
+  const flow: string[] = tier ? (FLOW_BY_TIER[tier] ?? FULL_FLOW) : FULL_FLOW;
   const completedTypes = new Set(
     milestones.filter((m) => m.completedAt).map((m) => m.type)
   );

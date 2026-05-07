@@ -99,17 +99,9 @@ export function classify(
     };
   }
 
-  // Rule 3 — explicit cross-department + edit_artemis (already covered by rule 2,
-  // kept for parity with PRD).
-  if (a.cross_department === true && a.edit_artemis === true) {
-    return {
-      tier: "contributor",
-      edge_case: null,
-      complete: isComplete(a),
-      rationale:
-        "Cross-department value with Artemis write-back: Contributor.",
-    };
-  }
+  // Rule 3 — explicit cross-department + edit_artemis is intentionally a
+  // no-op here: Rule 2 already returns "contributor" for any edit_artemis === true.
+  // The PRD lists it separately for clarity; we preserve it as documentation.
 
   // Rule 4 — Personal Project.
   if (
