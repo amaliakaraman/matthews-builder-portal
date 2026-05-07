@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+/*
+  Matthews™ Visual Identity Guidelines v1.0 (Feb 2026)
+  All tokens here are pulled directly from the Citizen Builder Portal PRD §7.2 / §7.4.
+  Do not deviate without Creative Director approval.
+*/
+
+@theme {
+  /* Primary — foundational, most prominent */
+  --color-matthews-deep: #0e1a34;
+  --color-matthews-deepest: #0f111b;
+
+  /* Secondary — energy + accents (20–30% of any surface) */
+  --color-electric-dark: #4e8eff;
+  --color-electric-light: #2b77fc;
+  --color-platinum: #f3f3f4;
+
+  /* Tertiary — specialty / data viz (<5% of any surface) */
+  --color-nexus-indigo: #3b2997;
+  --color-ion-aqua: #4ec4cf;
+  --color-horizon-lavender: #a5a0ff;
+
+  /* Semantic */
+  --color-success: #2f9e6b;
+  --color-warning: #d99e2b;
+  --color-danger: #c64545;
+
+  /* Brand radius — 0.0625in ≈ 4px (PRD §7.2.5) */
+  --radius-matthews: 4px;
+
+  /* Typography */
+  --font-sans:
+    "Satoshi", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  /* Kallisto unavailable per PRD §11 Q7 — Satoshi Black is the explicit
+     PRD-permitted fallback for H1 (PRD §7.2.2). */
+  --font-display: "Satoshi", "Kallisto", sans-serif;
+}
+
+/* Satoshi via Fontshare (PRD §7.2.2 font sourcing) */
+@import url("https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&display=swap");
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background-color: white;
+    color: var(--color-matthews-deep);
+    font-family: var(--font-sans);
+    font-size: 12pt;
+    line-height: 16pt;
+    letter-spacing: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* PRD §7.2.2 heading scale (skip a level for contrast) */
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 900; /* Satoshi Black (Kallisto Heavy fallback) */
+    letter-spacing: -0.01em;
+    line-height: 1.05;
+  }
+  h2 {
+    font-weight: 700; /* Satoshi Bold */
+    letter-spacing: -0.005em;
+  }
+  h3 {
+    font-weight: 700;
+  }
+  h4 {
+    font-weight: 500;
+  }
+  h6 {
+    font-weight: 400;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-size: 0.7rem;
+  }
+
+  /* Paragraph readability — PRD §7.2.2 "never span the full page width" */
+  .prose-matthews p {
+    max-width: 65ch;
+  }
+}
+
+/* Brand utility — the "vertical H1 support line" (PRD §7.2.5).
+   Used by the SectionHeading component but exposed as a utility for one-offs. */
+@utility vertical-rule {
+  position: relative;
+  padding-left: 1rem;
+}
+@utility vertical-rule::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--color-electric-light);
+}
+
+/* Dark surface — admin/PX surfaces default to Deep Blue (PRD §7.3) */
+.surface-deep {
+  background-color: var(--color-matthews-deep);
+  color: white;
+}
+.surface-deepest {
+  background-color: var(--color-matthews-deepest);
+  color: white;
+}
+.surface-platinum {
+  background-color: var(--color-platinum);
+  color: var(--color-matthews-deep);
+}
+
+/* Focus ring uses Electric Blue (works on both light + dark surfaces) */
+*:focus-visible {
+  outline: 2px solid var(--color-electric-light);
+  outline-offset: 2px;
+}
+
+/* Hide scrollbars on horizontally scrolling chip rows */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

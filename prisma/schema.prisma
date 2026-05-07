@@ -1,0 +1,271 @@
+// Builder Portal — Prisma schema
+// All entities map directly to PRD §6.1 / Citizen Builder Portal PRD v1.1.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --- Enums (PRD §2.2 / §2.5 / §6.1) ---
+
+enum Tier {
+  personal
+  consumer
+  contributor
+}
+
+enum AudienceType {
+  agents
+  market_leaders
+  financiers
+  marketers
+  sales_ops
+}
+
+enum ProjectStatus {
+  draft
+  submitted
+  under_px_review
+  eng_alignment
+  approved
+  in_build
+  mvp_ready
+  in_test
+  px_signoff
+  deployed
+  active
+  acknowledged // Personal-tier terminal-active state per PRD §2.5
+  needs_revision
+  rejected
+  archived
+}
+
+enum UserRole {
+  builder
+  px_admin
+  sponsor
+  read_only
+}
+
+enum MilestoneType {
+  submitted
+  px_review
+  eng_alignment
+  approved
+  mvp_ready
+  test_started
+  px_signoff
+  deployed
+}
+
+enum AssignmentRole {
+  px_coach
+  pm
+  design
+  eng_coordinator
+}
+
+enum NotificationKind {
+  submission_received
+  classification_changed
+  classification_approved
+  mvp_review_requested
+  sponsor_signoff_requested
+  milestone_updated
+  comment_added
+  status_changed
+  provisioning_requested
+}
+
+enum ProvisioningStatus {
+  pending
+  in_progress
+  ready
+  failed
+}
+
+// --- Models ---
+
+model User {
+  id                String       @id @default(uuid()) @db.Uuid
+  email             String       @unique
+  name              String
+  role              UserRole     @default(builder)
+  departmentId      String?      @map("department_id") @db.Uuid
+  department        Department?  @relation(fields: [departmentId], references: [id])
+  createdAt         DateTime     @default(now()) @map("created_at")
+
+  builtProjects     Project[]    @relation("ProjectBuilder")
+  sponsorRecord     Sponsor?
+  assignments       Assignment[]
+  auditLogEntries   AuditLogEntry[] @relation("AuditActor")
+  comments          Comment[]
+  notifications     Notification[]
+
+  @@map("users")
+}
+
+model Department {
+  id                  String     @id @default(uuid()) @db.Uuid
+  name                String     @unique
+  coreJobsDescription String?    @map("core_jobs_description")
+  isActive            Boolean    @default(true) @map("is_active")
+  createdAt           DateTime   @default(now()) @map("created_at")
+
+  users               User[]
+  ownedProjects       Project[]  @relation("ProjectProductOwner")
+
+  @@map("departments")
+}
+
+model Sponsor {
+  id            String       @id @default(uuid()) @db.Uuid
+  userId        String       @unique @map("user_id") @db.Uuid
+  user          User         @relation(fields: [userId], references: [id])
+  audienceType  AudienceType @map("audience_type")
+  isActive      Boolean      @default(true) @map("is_active")
+  createdAt     DateTime     @default(now()) @map("created_at")
+
+  sponsoredProjects Project[]
+
+  @@map("sponsors")
+}
+
+model Project {
+  id                   String          @id @default(uuid()) @db.Uuid
+  name                 String
+  description          String?
+  problemStatement     String?         @map("problem_statement")
+  expectedUsers        String?         @map("expected_users")
+  scopingDocsUrl       String?         @map("scoping_docs_url")
+  intendedStartDate    DateTime?       @map("intended_start_date")
+
+  builderUserId        String          @map("builder_user_id") @db.Uuid
+  builder              User            @relation("ProjectBuilder", fields: [builderUserId], references: [id])
+
+  tier                 Tier?
+  productOwnerDeptId   String?         @map("product_owner_dept_id") @db.Uuid
+  productOwnerDept     Department?     @relation("ProjectProductOwner", fields: [productOwnerDeptId], references: [id])
+  audienceType         AudienceType?   @map("audience_type")
+  executiveSponsorId   String?         @map("executive_sponsor_id") @db.Uuid
+  executiveSponsor     Sponsor?        @relation(fields: [executiveSponsorId], references: [id])
+
+  status               ProjectStatus   @default(draft)
+  intakeAnswers        Json?           @map("intake_answers")
+  edgeCase             String?         @map("edge_case")
+
+  databaseUrl          String?         @map("database_url")
+  endpointUrl          String?         @map("endpoint_url")
+
+  wrikeId              String?         @unique @map("wrike_id")
+  needsClassification  Boolean         @default(false) @map("needs_classification")
+
+  createdAt            DateTime        @default(now()) @map("created_at")
+  updatedAt            DateTime        @updatedAt @map("updated_at")
+  submittedAt          DateTime?       @map("submitted_at")
+
+  milestones           Milestone[]
+  assignments          Assignment[]
+  auditLogEntries      AuditLogEntry[]
+  comments             Comment[]
+  provisioningRequests ProvisioningRequest[]
+  notifications        Notification[]
+
+  @@index([status])
+  @@index([tier])
+  @@index([builderUserId])
+  @@index([productOwnerDeptId])
+  @@map("projects")
+}
+
+model Milestone {
+  id          String        @id @default(uuid()) @db.Uuid
+  projectId   String        @map("project_id") @db.Uuid
+  project     Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type        MilestoneType
+  completedAt DateTime?     @map("completed_at")
+  notes       String?
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("milestones")
+}
+
+model Assignment {
+  id         String         @id @default(uuid()) @db.Uuid
+  projectId  String         @map("project_id") @db.Uuid
+  project    Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId     String         @map("user_id") @db.Uuid
+  user       User           @relation(fields: [userId], references: [id])
+  role       AssignmentRole
+  assignedAt DateTime       @default(now()) @map("assigned_at")
+
+  @@unique([projectId, userId, role])
+  @@index([projectId])
+  @@map("assignments")
+}
+
+model AuditLogEntry {
+  id           String   @id @default(uuid()) @db.Uuid
+  projectId    String   @map("project_id") @db.Uuid
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  actorUserId  String   @map("actor_user_id") @db.Uuid
+  actor        User     @relation("AuditActor", fields: [actorUserId], references: [id])
+  action       String   // e.g. "tier_changed", "status_changed", "sponsor_overridden"
+  before       Json?
+  after        Json?
+  reason       String?  // required for overrides — enforced at app layer
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("audit_log_entries")
+}
+
+model Comment {
+  id           String   @id @default(uuid()) @db.Uuid
+  projectId    String   @map("project_id") @db.Uuid
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorUserId String   @map("author_user_id") @db.Uuid
+  author       User     @relation(fields: [authorUserId], references: [id])
+  body         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([projectId])
+  @@map("comments")
+}
+
+model ProvisioningRequest {
+  id          String             @id @default(uuid()) @db.Uuid
+  projectId   String             @map("project_id") @db.Uuid
+  project     Project            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  status      ProvisioningStatus @default(pending)
+  databaseUrl String?            @map("database_url")
+  endpointUrl String?            @map("endpoint_url")
+  notes       String?
+  requestedAt DateTime           @default(now()) @map("requested_at")
+  fulfilledAt DateTime?          @map("fulfilled_at")
+
+  @@index([projectId])
+  @@map("provisioning_requests")
+}
+
+model Notification {
+  id         String           @id @default(uuid()) @db.Uuid
+  userId     String           @map("user_id") @db.Uuid
+  user       User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projectId  String?          @map("project_id") @db.Uuid
+  project    Project?         @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  kind       NotificationKind
+  title      String
+  body       String?
+  readAt     DateTime?        @map("read_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
